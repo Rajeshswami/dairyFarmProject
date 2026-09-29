@@ -1,0 +1,100 @@
+# Dependencies
+node_modules/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# NestJS build output
+dist/
+coverage/
+
+# Runtime data
+*.pid
+*.seed
+*.pid.lock
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / editors
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+# Temporary files
+tmp/
+temp/
+
+# Test coverage
+.nyc_output/
+
+# Cache
+.cache/
+.eslintcache
+
+# Local database / generated files
+*.sqlite
+*.sqlite3
+
+# Environment-specific files
+.env.local
+.env.development
+.env.production
+.env.test
+# Test files
+*.spec.ts
+*.spec.js# Dependencies
+node_modules/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+coverage/
+
+# Test files
+*.spec.ts
+*.spec.js
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+
+# Cache
+.cache/
+.eslintcache
+
+# Local databases
+*.sqlite
+*.sqlite3
