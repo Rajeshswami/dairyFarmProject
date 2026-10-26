@@ -13,6 +13,8 @@ import {
   Customer,
   CustomerSchema,
 } from '../customers/schema/customer.schema';
+import { MonthlyBill, MonthlyBillSchema } from '../bills/schema/monthly-bill.schema';
+import { Payment, PaymentSchema } from '../payments/schema/payment.schema';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import {
         name: Customer.name,
         schema: CustomerSchema,
       },
+      { name: MonthlyBill.name, schema: MonthlyBillSchema },
+      { name: Payment.name, schema: PaymentSchema },
     ]),
   ],
 

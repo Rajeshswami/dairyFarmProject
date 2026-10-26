@@ -82,6 +82,7 @@ export class PaymentsService {
         totalAmount: updatedBill.totalAmount,
         paidAmount: updatedBill.paidAmount,
         pendingAmount: updatedBill.pendingAmount,
+        creditAmount: updatedBill.creditAmount || 0,
         status: updatedBill.status,
       },
     };
@@ -130,8 +131,8 @@ export class PaymentsService {
       0,
     );
 
-    const pendingAmount =
-      Math.max(0, bill.totalAmount - paidAmount);
+    const pendingAmount = Math.max(0, bill.totalAmount - paidAmount);
+    const creditAmount = Math.max(0, paidAmount - bill.totalAmount);
 
     let status: 'PENDING' | 'PARTIAL' | 'PAID';
 
@@ -145,6 +146,7 @@ export class PaymentsService {
 
     bill.paidAmount = paidAmount;
     bill.pendingAmount = pendingAmount;
+    bill.creditAmount = creditAmount;
     bill.status = status;
 
     await bill.save();
@@ -218,7 +220,7 @@ async update(
   const newTotalPaid =
     otherPaidAmount + newAmount;
 
-  if (newTotalPaid > bill.totalAmount) {
+  if (dto.amount !== undefined && newTotalPaid > bill.totalAmount) {
     throw new BadRequestException(
       `Payment exceeds bill amount. Maximum allowed is ₹${
         bill.totalAmount - otherPaidAmount

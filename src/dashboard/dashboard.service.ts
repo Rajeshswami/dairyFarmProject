@@ -134,6 +134,7 @@ const endDate = startOfFarmMonth(year,month + 1);
           totalBilling: { $sum: '$totalAmount' },
           totalCollected: { $sum: '$paidAmount' },
           totalPending: { $sum: '$pendingAmount' },
+          totalCredit: { $sum: { $ifNull: ['$creditAmount', 0] } },
 
           paidCustomers: {
             $sum: {
@@ -160,6 +161,7 @@ const endDate = startOfFarmMonth(year,month + 1);
       totalBilling: 0,
       totalCollected: 0,
       totalPending: 0,
+      totalCredit: 0,
       paidCustomers: 0,
       partialCustomers: 0,
       pendingCustomers: 0,
@@ -204,6 +206,7 @@ const endDate = startOfFarmMonth(year,month + 1);
         totalBilling: billingData.totalBilling,
         totalCollected: billingData.totalCollected,
         totalPending: billingData.totalPending,
+        totalCredit: billingData.totalCredit || 0,
       },
 
       payments: {

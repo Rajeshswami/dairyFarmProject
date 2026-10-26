@@ -24,12 +24,16 @@ export class CustomersService {
 
       startDate:startOfFarmDate(createCustomerDto.startDate),
 
-      ratePerLiter: Number(process.env.MILK_RATE || 75),
+      ratePerLiter: Number(createCustomerDto.ratePerLiter ?? process.env.MILK_RATE ?? 75),
 
       active: true,
     });
 
     return customer.save();
+  }
+
+  getDefaultMilkRate() {
+    return { ratePerLiter: Number(process.env.MILK_RATE || 75) };
   }
 
   async findAll() {
@@ -89,7 +93,13 @@ async update(
   }
 
   if (dto.startDate !== undefined) {
-    customer.startDate = startOfFarmDate(dto.startDate)
+    customer.startDate = startOfFarmDate(dto.startDate);
+  }
+
+  // Rate changes apply to new deliveries only. Existing deliveries keep
+  // their saved ratePerLiter snapshot for historical billing accuracy.
+  if (dto.ratePerLiter !== undefined) {
+    customer.ratePerLiter = Number(dto.ratePerLiter);
   }
 
   return customer.save();

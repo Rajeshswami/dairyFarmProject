@@ -16,7 +16,9 @@ import {
   MonthlyBill,
   MonthlyBillDocument,
 } from '../bills/schema/monthly-bill.schema';
-import { startOfFarmDate, startOfFarmMonth, startOfNextFarmDate } from '../common/utils/farm-date.util';
+import { Payment, PaymentDocument } from '../payments/schema/payment.schema';
+import { Customer, CustomerDocument } from '../customers/schema/customer.schema';
+import { startOfFarmDate, startOfFarmMonth, startOfNextFarmDate, startOfNextFarmMonth } from '../common/utils/farm-date.util';
 @Injectable()
 export class ReportsService {
 constructor(
@@ -30,6 +32,12 @@ private readonly monthlyBillModel: Model<MonthlyBillDocument>,
 
   @InjectModel(MilkDelivery.name)
   private readonly milkDeliveryModel: Model<MilkDeliveryDocument>,
+
+  @InjectModel(Payment.name)
+  private readonly paymentModel: Model<PaymentDocument>,
+
+  @InjectModel(Customer.name)
+  private readonly customerModel: Model<CustomerDocument>,
 ) {}
 
   async getDailyProduction(dateString: string) {
@@ -112,7 +120,7 @@ const endDate = startOfNextFarmDate(dateString);
   async getMonthlyProduction(year: number, month: number) {
   // Month is 1-12
 const start = startOfFarmMonth(year, month);
-const end = startOfFarmMonth(year, month + 1); 
+const end = startOfNextFarmMonth(year, month);
 
   // -----------------------------
   // 1. Active animals
@@ -262,7 +270,7 @@ async getCustomerConsumption(year: number, month: number) {
   // 1. Create month date range
   // --------------------------------
   const start =startOfFarmMonth(year, month);
-  const end = startOfFarmMonth(year, month + 1); 
+  const end = startOfNextFarmMonth(year, month);
 
 
   // --------------------------------
@@ -299,10 +307,14 @@ async getCustomerConsumption(year: number, month: number) {
     0,
   );
 
-  const totalAmount = deliveries.reduce(
-    (sum, delivery) => sum + delivery.amount,
-    0,
-  );
+  const totalAmount = deliveries.reduce((sum, delivery) => {
+    const customer = delivery.customerId as any;
+    const rate = Number(delivery.ratePerLiter || customer?.ratePerLiter || process.env.MILK_RATE || 75);
+    const amount = Number.isFinite(Number(delivery.amount))
+      ? Number(delivery.amount)
+      : Number(delivery.totalLiters || 0) * rate;
+    return sum + amount;
+  }, 0);
 
   // --------------------------------
   // 4. Group by customer
@@ -348,7 +360,8 @@ async getCustomerConsumption(year: number, month: number) {
     data.morningLiters += delivery.morning;
     data.eveningLiters += delivery.evening;
     data.totalLiters += delivery.totalLiters;
-    data.totalAmount += delivery.amount;
+    const rate = Number(delivery.ratePerLiter || customer.ratePerLiter || process.env.MILK_RATE || 75);
+    data.totalAmount += Number.isFinite(Number(delivery.amount)) ? Number(delivery.amount) : Number(delivery.totalLiters || 0) * rate;
     data.deliveryDays += 1;
   }
 
@@ -398,6 +411,29 @@ async getCustomerConsumption(year: number, month: number) {
   };
 }
 async getFinancialReport(year: number, month: number) {
+  const billsToRefresh = await this.monthlyBillModel.find({ year, month });
+  const start = startOfFarmMonth(year, month);
+  const end = startOfNextFarmMonth(year, month);
+  for (const bill of billsToRefresh) {
+    const customerId = bill.customerId.toString();
+    const customer = await this.customerModel.findById(customerId);
+    const fallbackRate = Number(customer?.ratePerLiter || process.env.MILK_RATE || 75);
+    const [monthDeliveries, payments] = await Promise.all([
+      this.milkDeliveryModel.find({ customerId: bill.customerId, date: { $gte: start, $lt: end } }),
+      this.paymentModel.find({ billId: bill._id }),
+    ]);
+    const liters = Number(monthDeliveries.reduce((sum, delivery) => sum + Number(delivery.totalLiters || 0), 0).toFixed(2));
+    const amount = Math.round((monthDeliveries.reduce((sum, delivery) => sum + Number(delivery.totalLiters || 0) * Number(delivery.ratePerLiter || fallbackRate), 0) + Number.EPSILON) * 100) / 100;
+    const paid = Math.round((payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0) + Number.EPSILON) * 100) / 100;
+    bill.totalLiters = liters;
+    bill.totalAmount = amount;
+    bill.ratePerLiter = liters > 0 ? Number((amount / liters).toFixed(4)) : fallbackRate;
+    bill.paidAmount = paid;
+    bill.pendingAmount = Math.max(0, amount - paid);
+    bill.creditAmount = Math.max(0, paid - amount);
+    bill.status = bill.pendingAmount === 0 ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING';
+    await bill.save();
+  }
   const bills = await this.monthlyBillModel
     .find({ year, month })
     .populate(
@@ -418,6 +454,11 @@ async getFinancialReport(year: number, month: number) {
 
   const totalPending = bills.reduce(
     (sum, bill) => sum + bill.pendingAmount,
+    0,
+  );
+
+  const totalCredit = bills.reduce(
+    (sum, bill) => sum + Number(bill.creditAmount || 0),
     0,
   );
 
@@ -442,6 +483,7 @@ async getFinancialReport(year: number, month: number) {
       totalBilling,
       totalCollected,
       totalPending,
+      totalCredit,
       paidCustomers,
       partialCustomers,
       pendingCustomers,
@@ -460,6 +502,7 @@ async getFinancialReport(year: number, month: number) {
         totalAmount: bill.totalAmount,
         paidAmount: bill.paidAmount,
         pendingAmount: bill.pendingAmount,
+        creditAmount: Number(bill.creditAmount || 0),
 
         status: bill.status,
       };

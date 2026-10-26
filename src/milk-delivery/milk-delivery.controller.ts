@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 
@@ -43,8 +44,11 @@ export class MilkDeliveryController {
   UserRole.STAFF,
 )
   @Get()
-  findAll() {
-    return this.milkDeliveryService.findAll();
+  findAll(
+    @Query('date') date?: string,
+    @Query('customerId') customerId?: string,
+  ) {
+    return this.milkDeliveryService.findAll({ date, customerId });
   }
     @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(

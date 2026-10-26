@@ -20,6 +20,8 @@ import {
   Animal,
   AnimalSchema,
 } from '../animal/schema/animal.schema';
+import { Payment, PaymentSchema } from '../payments/schema/payment.schema';
+import { Customer, CustomerSchema } from '../customers/schema/customer.schema';
 
 @Module({
   imports: [
@@ -40,6 +42,8 @@ import {
   name: MonthlyBill.name,
   schema: MonthlyBillSchema,
 },
+      { name: Payment.name, schema: PaymentSchema },
+      { name: Customer.name, schema: CustomerSchema },
     ]),
   ],
 

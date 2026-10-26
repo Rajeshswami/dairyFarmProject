@@ -49,8 +49,12 @@ export class MonthlyBill {
 
   @Prop({
     required: true,
+    default: 0,
   })
   pendingAmount: number;
+
+  @Prop({ default: 0, min: 0 })
+  creditAmount: number;
 
   @Prop({
     enum: ['PENDING', 'PARTIAL', 'PAID'],

@@ -27,14 +27,14 @@ export class Customer {
   @Prop({
     required: true,
     min: 0,
-    enum: [0, 0.25, 0.5, 0.75, 1],
+    enum: Array.from({ length: 41 }, (_, index) => index * 0.25),
   })
   morning: number;
 
   @Prop({
     required: true,
     min: 0,
-    enum: [0, 0.25, 0.5, 0.75, 1],
+    enum: Array.from({ length: 41 }, (_, index) => index * 0.25),
   })
   evening: number;
 
